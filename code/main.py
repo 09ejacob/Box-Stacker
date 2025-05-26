@@ -1,12 +1,12 @@
-from box import Box
-import viewer
+# main.py
 import pyglet
+import viewer
+from stacker import Stacker
 
-boxes = [
-    Box((0,0,0), (0.8,0.144,1.2), (1,0,0,0.6)), # Default pallet
-]
-
-viewer.boxes = boxes
-
+# main.py
 if __name__ == '__main__':
+    st = Stacker()
+    st.load_from_file('boxes/boxes.json')   # <-- no “..”
+    st.stack()
+    viewer.boxes = st.boxes
     pyglet.app.run()

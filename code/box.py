@@ -22,41 +22,48 @@ class Box:
         glTranslatef(self.x, self.y, self.z)
         glScalef(self.w, self.h, self.d)
         glBegin(GL_QUADS)
+
         # front
         glNormal3f(0, 0, 1)
         glVertex3f(-.5, -.5,  .5)
         glVertex3f( .5, -.5,  .5)
         glVertex3f( .5,  .5,  .5)
         glVertex3f(-.5,  .5,  .5)
+
         # back
         glNormal3f(0, 0, -1)
         glVertex3f(-.5, -.5, -.5)
         glVertex3f(-.5,  .5, -.5)
         glVertex3f( .5,  .5, -.5)
         glVertex3f( .5, -.5, -.5)
+
         # left
         glNormal3f(-1, 0, 0)
         glVertex3f(-.5, -.5, -.5)
         glVertex3f(-.5, -.5,  .5)
         glVertex3f(-.5,  .5,  .5)
         glVertex3f(-.5,  .5, -.5)
+
         # right
         glNormal3f(1, 0, 0)
         glVertex3f( .5, -.5, -.5)
         glVertex3f( .5,  .5, -.5)
         glVertex3f( .5,  .5,  .5)
         glVertex3f( .5, -.5,  .5)
+
         # top
         glNormal3f(0, 1, 0)
         glVertex3f(-.5,  .5, -.5)
         glVertex3f(-.5,  .5,  .5)
         glVertex3f( .5,  .5,  .5)
         glVertex3f( .5,  .5, -.5)
+        
         # bottom
         glNormal3f(0, -1, 0)
         glVertex3f(-.5, -.5, -.5)
         glVertex3f( .5, -.5, -.5)
         glVertex3f( .5, -.5,  .5)
         glVertex3f(-.5, -.5,  .5)
+        
         glEnd()
         glPopMatrix()
