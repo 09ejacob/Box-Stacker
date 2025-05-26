@@ -13,7 +13,6 @@ from pyglet.gl import (
 from box import Box
 
 boxes = [
-    Box((0,0,0), (0.8,0.144,1.2), (1,0,0,0.6)),
 ]
 
 window = pyglet.window.Window(800, 600, "3D view", resizable=True)
