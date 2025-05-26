@@ -4,7 +4,6 @@ from stacker import Stacker
 
 if __name__ == '__main__':
     st = Stacker()
-    
     st.load_from_file('boxes/boxes.json')
     st.stack()
     

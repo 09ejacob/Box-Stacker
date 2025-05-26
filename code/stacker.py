@@ -1,71 +1,82 @@
+# stacker.py
+
 import json
 import random
 from box import Box
 
 class Stacker:
     def __init__(self,
-                 pallet_size=(0.8, 1.2, 0.144),
-                 pallet_color=(0.6, 0.6, 0.6, 1.0)):
-        self.pallet_size = pallet_size
-        pw, pl, ph = pallet_size
+                 pallet_size=(0.8, 1.2, 0.144),   # (width, length, height)
+                 pallet_color=(0.6, 0.6, 0.6, 1.0),
+                 allow_rotation=True):
+        # unpack pallet dimensions
+        self.pw, self.pl, self.ph = pallet_size
+        self.allow_rotation = allow_rotation
 
-        self.boxes = [Box((0, ph/2, 0), pallet_size, pallet_color)]
-        self.items  = []
+        # start with the pallet itself in the scene
+        self.boxes = [
+            Box(
+                center=(0, self.ph/2, 0),
+                size=(self.pw, self.pl, self.ph),
+                color=pallet_color
+            )
+        ]
+
+        # this will come from JSON
+        self.items = []
 
     def load_from_file(self, path):
         with open(path, 'r') as f:
-            self.items = json.load(f)
+            self.items = json.load(f)  # expects [{"size":[w,l,h],"count":N}, ...]
 
     def stack(self):
-        pw, pl, ph = self.pallet_size
+        # 1) turn each spec into N individual (w,l,h) tuples
         todo = []
         for it in self.items:
             w, l, h = it['size']
             cnt = it.get('count', 1)
             todo += [(w, l, h)] * cnt
 
+        # 2) sort by footprint area, big first (helps corners/edges)
         todo.sort(key=lambda b: b[0] * b[1], reverse=True)
 
-        layer_y   = ph
-        remaining = todo[:]
+        # 3) we’ll do just one layer at height = pallet top
+        layer_y = self.ph
 
-        while remaining:
-            free_rects    = [(-pw/2, -pl/2, pw, pl)]
-            placed_heights = []
+        # 4) track free rectangles on that layer
+        #    each rect is (x0, z0, width, length), measured from pallet center
+        free = [(-self.pw/2, -self.pl/2, self.pw, self.pl)]
 
-            while True:
-                best = None
-                for idx, (w, l, h) in enumerate(remaining):
-                    for rect in free_rects:
-                        x0, z0, rw, rl = rect
-                        if w <= rw and l <= rl:
-                            leftover = (rw*rl) - (w*l)
-                            if best is None or leftover < best[0]:
-                                best = (leftover, idx, rect, w, l, h)
-                if not best:
+        # 5) place each box in turn (first‐fit *best* free‐rect)
+        for w, l, h in todo:
+            placed = False
+            # try both orientations if allowed
+            for rotated in (False, True) if self.allow_rotation else (False,):
+                rw, rl = (l, w) if rotated else (w, l)
+
+                # scan free rects for one it fits
+                for i, (x0, z0, fw, fl) in enumerate(free):
+                    if rw <= fw and rl <= fl:
+                        # compute center position
+                        x = x0 + rw/2
+                        z = z0 + rl/2
+                        y = layer_y + h/2
+
+                        # add it (semi-transparent random color)
+                        color = (random.random(), random.random(), random.random(), 0.5)
+                        self.boxes.append(Box((x, y, z), (w, l, h), color))
+
+                        # remove this free rect
+                        free.pop(i)
+                        # carve out two new rects: right & top
+                        right = (x0 + rw, z0,     fw - rw, rl)
+                        top   = (x0,     z0 + rl, fw,      fl - rl)
+                        for nr in (right, top):
+                            if nr[2] > 1e-6 and nr[3] > 1e-6:
+                                free.append(nr)
+
+                        placed = True
+                        break
+                if placed:
                     break
-
-                _, idx, rect, w, l, h = best
-                x0, z0, rw, rl = rect
-
-                x = x0 + w/2
-                z = z0 + l/2
-                y = layer_y + h/2
-
-                color = (random.random(), random.random(), random.random(), 0.5)
-                self.boxes.append(Box((x, y, z), (w, l, h), color))
-                placed_heights.append(h)
-
-                free_rects.remove(rect)
-                right = (x0 + w, z0,      rw - w, l)
-                top   = (x0,     z0 + l,  rw,     rl - l)
-                for nr in (right, top):
-                    if nr[2] > 1e-6 and nr[3] > 1e-6:
-                        free_rects.append(nr)
-
-                remaining.pop(idx)
-
-            if not placed_heights:
-                break
-
-            layer_y += max(placed_heights)
+            # if it didn’t fit anywhere, it’s skipped for now
